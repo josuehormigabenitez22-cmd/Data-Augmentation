@@ -1,0 +1,60 @@
+# Pipeline Data Augmentation
+stages:
+  - lint
+  - test
+  - build
+
+variables:
+  PYTHON_VERSION: "3.9"
+
+# Plantilla base 
+.python-base:
+  image: python:${PYTHON_VERSION}-slim
+  before_script:
+    - pip install --upgrade pip
+    - pip install -r requirements.txt
+
+# Etapa 1: Lint y formato 
+lint:
+  extends: .python-base
+  stage: lint
+  script:
+    - pip install flake8 black isort
+    - black --check src/
+    - isort --check-only src/
+    - flake8 src/ --max-line-length=100
+  allow_failure: true
+
+# Etapa 2: Tests unitarios  
+test:model-architecture:
+  extends: .python-base
+  stage: test
+  script:
+    - cd src
+    - python -c "
+      from models import build_custom_convnet, compile_binary_classifier;
+      m = build_custom_convnet();
+      m = compile_binary_classifier(m);
+      print('Arquitectura custom validada');
+      m.summary();
+      "
+  artifacts:
+    when: always
+    expire_in: 1 week
+
+# Etapa 3: Generación de documentación  
+
+build:docs:
+  extends: .python-base
+  stage: build
+  script:
+    - echo "Validando README..."
+    - python -c "
+      with open('README.md', 'r') as f:
+          content = f.read();
+          assert len(content) > 1000, 'README demasiado corto';
+          print(f'README validado ({len(content)} caracteres)');
+      "
+  only:
+    - main
+    - develop
