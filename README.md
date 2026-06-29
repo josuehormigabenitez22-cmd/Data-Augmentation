@@ -10,7 +10,7 @@
 
 **Portfolio profesional de Deep Learning aplicado a Visión por Computador**
 
-*Clasificación de imágenes mediante Redes Neuronales Convolucionales (CNN) — de la teoría a la producción*
+*Clasificación de imágenes mediante Redes Neuronales Convolucionales (CNN)*
 
 </div>
 
@@ -35,7 +35,7 @@
 
 ---
 
-## 🎯 Descripción del Proyecto
+##  Descripción del Proyecto
 
 Este proyecto implementa un sistema completo de **clasificación de imágenes** usando Redes Neuronales Convolucionales (CNN), partiendo desde los principios matemáticos más fundamentales hasta el despliegue de un modelo de producción.
 
@@ -53,7 +53,7 @@ El problema central es el siguiente: dado un conjunto de imágenes de vehículos
 
 ---
 
-## 🗂️ Estructura del Repositorio
+##  Estructura del Repositorio
 
 ```
 computer-vision-portfolio/
@@ -85,7 +85,7 @@ computer-vision-portfolio/
 
 ---
 
-## 📚 Fundamentos Teóricos
+##  Fundamentos Teóricos
 
 ### 1. El Clasificador Convolucional
 
@@ -385,7 +385,7 @@ model = keras.Sequential([
 
 ---
 
-## 🔬 Caso Práctico: Clasificador Coche vs. Camión
+##  Caso Práctico: Clasificador Coche vs. Camión
 
 ### El Problema
 
@@ -410,9 +410,9 @@ print(f"TensorFlow version: {tf.__version__}")
 
 ```python
 # Configuración del pipeline de datos
-IMG_SIZE   = (128, 128)
+IMG_SIZE = (128, 128)
 BATCH_SIZE = 32
-AUTOTUNE   = tf.data.AUTOTUNE
+AUTOTUNE = tf.data.AUTOTUNE
 
 # Dataset de entrenamiento
 ds_train = tf.keras.preprocessing.image_dataset_from_directory(
@@ -521,8 +521,8 @@ def plot_training_history(history):
     fig.suptitle('Curvas de Entrenamiento — Clasificador CNN', fontsize=14)
 
     # Pérdida
-    axes[0].plot(history_df['loss'],     label='Entrenamiento', color='steelblue')
-    axes[0].plot(history_df['val_loss'], label='Validación',    color='tomato')
+    axes[0].plot(history_df['loss'], label='Entrenamiento', color='steelblue')
+    axes[0].plot(history_df['val_loss'], label='Validación', color='tomato')
     axes[0].set_title('Pérdida (Binary Crossentropy)')
     axes[0].set_xlabel('Épocas')
     axes[0].set_ylabel('Loss')
@@ -530,8 +530,8 @@ def plot_training_history(history):
     axes[0].grid(alpha=0.3)
 
     # Precisión
-    axes[1].plot(history_df['binary_accuracy'],     label='Entrenamiento', color='steelblue')
-    axes[1].plot(history_df['val_binary_accuracy'], label='Validación',    color='tomato')
+    axes[1].plot(history_df['binary_accuracy'], label='Entrenamiento', color='steelblue')
+    axes[1].plot(history_df['val_binary_accuracy'], label='Validación', color='tomato')
     axes[1].set_title('Precisión (Binary Accuracy)')
     axes[1].set_xlabel('Épocas')
     axes[1].set_ylabel('Accuracy')
@@ -551,8 +551,8 @@ plot_training_history(history)
 # Evaluación final en el conjunto de validación
 loss, accuracy = model.evaluate(ds_valid, verbose=0)
 print(f"\n{'='*40}")
-print(f"  Pérdida en validación:    {loss:.4f}")
-print(f"  Precisión en validación:  {accuracy:.4f} ({accuracy*100:.1f}%)")
+print(f" Pérdida en validación: {loss:.4f}")
+print(f" Precisión en validación: {accuracy:.4f} ({accuracy*100:.1f}%)")
 print(f"{'='*40}")
 
 
@@ -565,8 +565,8 @@ def predict_image(image_path: str) -> dict:
     prediction = model.predict(img_array, verbose=0)[0][0]
 
     return {
-        'clase':       'Camión' if prediction > 0.5 else 'Coche',
-        'confianza':   max(prediction, 1 - prediction),
+        'clase': 'Camión' if prediction > 0.5 else 'Coche',
+        'confianza': max(prediction, 1 - prediction),
         'probabilidad': float(prediction),
     }
 
@@ -578,7 +578,7 @@ print(f"Confianza:  {resultado['confianza']:.1%}")
 
 ---
 
-## 📊 Resultados
+##  Resultados
 
 ### Comparativa de arquitecturas
 
@@ -592,13 +592,13 @@ print(f"Confianza:  {resultado['confianza']:.1%}")
 
 **Transfer Learning** aporta una mejora de ~7 puntos porcentuales sobre una red entrenada desde cero con los mismos datos, demostrando el valor de las representaciones preaprendidas en ImageNet.
 
-**Data Augmentation** reduce el sobreajuste (overfitting) visiblemente: las curvas de entrenamiento y validación convergen mejor, y la precisión en validación mejora ~2 puntos adicionales.
+**Data Augmentation** reduce el overfitting visiblemente: las curvas de entrenamiento y validación convergen mejor, y la precisión en validación mejora ~2 puntos adicionales.
 
 **El diseño de la arquitectura** importa: duplicar los filtros en cada bloque convolucional (32 → 64 → 128) mientras se reduce el tamaño espacial con MaxPool2D es un patrón robusto que mejora la capacidad representativa sin aumentar el costo computacional de forma descontrolada.
 
 ---
 
-## ⚙️ Instalación y Ejecución
+##  Instalación y Ejecución
 
 ### Prerrequisitos
 
@@ -634,7 +634,7 @@ python src/trainer.py --epochs 5 --batch-size 16 --no-gpu
 
 ---
 
-## 🛠️ Tecnologías Utilizadas
+##  Tecnologías Utilizadas
 
 | Tecnología | Versión | Uso |
 |---|---|---|
@@ -649,7 +649,7 @@ python src/trainer.py --epochs 5 --batch-size 16 --no-gpu
 
 ---
 
-## 📖 Referencias
+##  Referencias
 
 - Chollet, F. (2021). *Deep Learning with Python* (2nd ed.). Manning Publications.
 - Goodfellow, I., Bengio, Y., & Courville, A. (2016). *Deep Learning*. MIT Press.
@@ -662,7 +662,5 @@ python src/trainer.py --epochs 5 --batch-size 16 --no-gpu
 <div align="center">
 
 **Desarrollado como portfolio profesional de Deep Learning**
-
-*Si este proyecto te resultó útil, considera darle una ⭐ al repositorio*
 
 </div>
