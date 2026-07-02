@@ -1,170 +1,146 @@
 """
-src/models.py
-=============
-Definición de arquitecturas CNN para clasificación de imágenes.
-
-Contiene:
-  - build_transfer_model()   → VGG16 + Transfer Learning
-  - build_custom_convnet()   → Red personalizada desde cero
-  - build_augmented_model()  → VGG16 + Data Augmentation
+Definición de arquitecturas de modelos: clasificador con
+transfer learning (VGG16) y convnet personalizado desde cero.
 """
 
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-from tensorflow.keras.layers.experimental import preprocessing
 
 
-# Constantes 
-IMG_HEIGHT = 128
-IMG_WIDTH = 128
-IMG_SIZE = (IMG_HEIGHT, IMG_WIDTH)
-NUM_CLASSES = 1   # Clasificación binaria: Coche (0) vs Camión (1)
-
-
-# Modelos  
-def build_transfer_model(pretrained_base_path: str) -> keras.Model:
+def build_transfer_model(pretrained_base_path: str, augment: bool = False):
     """
-    Construye un clasificador basado en Transfer Learning con VGG16.
+    Construye un clasificador binario usando una base convolucional
+    VGG16 pre-entrenada (congelada) y un head denso propio.
 
-    La base convolucional de VGG16 (preentrenada en ImageNet) se congela.
-    Solo se entrena la cabeza clasificadora añadida.
+    Parameters
+    ----------
+    pretrained_base_path : str
+        Ruta al modelo base pre-entrenado guardado (formato Keras).
+    augment : bool
+        Si True, añade capas de data augmentation (RandomFlip,
+        RandomContrast) antes de la base pre-entrenada.
 
-    Args:
-        pretrained_base_path: Ruta al modelo VGG16 preentrenado guardado.
-
-    Returns:
-        Modelo Keras compilado listo para entrenar.
-    """
-    # Carga de la base preentrenada
-    pretrained_base = tf.keras.models.load_model(pretrained_base_path)
-    pretrained_base.trainable = False   # Congelar pesos
-
-    model = keras.Sequential([
-        # Cabeza clasificadora
-        pretrained_base,
-        layers.Flatten(),
-        layers.Dense(6, activation='relu'),
-        layers.Dense(NUM_CLASSES, activation='sigmoid'),
-    ], name='transfer_learning_vgg16')
-
-    return model
-
-
-def build_custom_convnet(input_shape: tuple = (128, 128, 3)) -> keras.Model:
-    """
-    Construye una red convolucional personalizada desde cero.
-
-    Arquitectura de 3 bloques convolucionales con número de filtros
-    creciente (32 → 64 → 128) y Max Pooling entre bloques.
-
-    Args:
-        input_shape: Dimensiones de la imagen de entrada (H, W, C).
-
-    Returns:
-        Modelo Keras sin compilar.
-    """
-    model = keras.Sequential([
-
-        # Bloque 1: características simples -> (bordes, texturas) 
-        layers.Conv2D(
-            filters=32,
-            kernel_size=5,
-            activation='relu',
-            padding='same',
-            input_shape=input_shape,
-            name='conv1',
-        ),
-        layers.MaxPool2D(pool_size=2, name='pool1'),
-
-        # Bloque 2: características intermedias -> (formas, partes) 
-        layers.Conv2D(
-            filters=64,
-            kernel_size=3,
-            activation='relu',
-            padding='same',
-            name='conv2',
-        ),
-        layers.MaxPool2D(pool_size=2, name='pool2'),
-
-        # Bloque 3: características complejas -> (objetos reconocibles) 
-        layers.Conv2D(
-            filters=128,
-            kernel_size=3,
-            activation='relu',
-            padding='same',
-            name='conv3',
-        ),
-        layers.MaxPool2D(pool_size=2, name='pool3'),
-
-        # Cabeza clasificadora 
-        layers.Flatten(name='flatten'),
-        layers.Dense(units=6, activation='relu', name='dense_hidden'),
-        layers.Dense(units=NUM_CLASSES, activation='sigmoid', name='output'),
-
-    ], name='custom_convnet')
-
-    return model
-
-
-def build_augmented_model(pretrained_base_path: str) -> keras.Model:
-    """
-    Construye el modelo con Transfer Learning y Data Augmentation integrada.
-
-    La aumentación se aplica directamente en el modelo como capas de
-    preprocesamiento, lo que permite ejecutarla en GPU durante el training.
-
-    Args:
-        pretrained_base_path: Ruta al modelo VGG16 preentrenado guardado.
-
-    Returns:
-        Modelo Keras sin compilar.
+    Returns
+    -------
+    tf.keras.Model
+        Modelo sin compilar, listo para `model.compile(...)`.
     """
     pretrained_base = tf.keras.models.load_model(pretrained_base_path)
     pretrained_base.trainable = False
 
-    model = keras.Sequential([
+    layers_list = []
 
-        # Data Augmentation (solo activa durante training) 
-        preprocessing.RandomFlip('horizontal'),
-        preprocessing.RandomContrast(0.5),
+    if augment:
+        layers_list += [
+            layers.RandomFlip("horizontal"),
+            layers.RandomContrast(0.5),
+        ]
 
-        # Base convolucional 
+    layers_list += [
         pretrained_base,
-
-        # Cabeza clasificadora  
         layers.Flatten(),
-        layers.Dense(6, activation='relu'),
-        layers.Dense(NUM_CLASSES, activation='sigmoid'),
+        layers.Dense(6, activation="relu"),
+        layers.Dense(1, activation="sigmoid"),
+    ]
 
-    ], name='augmented_transfer_model')
-
+    model = keras.Sequential(layers_list)
     return model
 
 
-# Compilación  
-def compile_binary_classifier(model: keras.Model,
-                               learning_rate: float = 1e-4) -> keras.Model:
+def build_custom_convnet(input_shape=(128, 128, 3)):
     """
-    Compila un modelo para clasificación binaria.
+    Construye un convnet propio desde cero, compuesto por tres
+    bloques convolucionales (Conv2D + MaxPool2D) seguidos de un
+    head denso de clasificación binaria.
 
-    Args:
-        model:         Modelo Keras a compilar.
-        learning_rate: Tasa de aprendizaje del optimizador Adam.
+    Parameters
+    ----------
+    input_shape : tuple
+        Forma de entrada (alto, ancho, canales).
 
-    Returns:
-        El mismo modelo compilado.
+    Returns
+    -------
+    tf.keras.Model
+        Modelo sin compilar, listo para `model.compile(...)`.
+    """
+    model = keras.Sequential([
+        # Bloque convolucional 1
+        layers.Conv2D(
+            filters=32, kernel_size=5, activation="relu",
+            padding="same", input_shape=input_shape,
+        ),
+        layers.MaxPool2D(),
+
+        # Bloque convolucional 2
+        layers.Conv2D(filters=64, kernel_size=3, activation="relu", padding="same"),
+        layers.MaxPool2D(),
+
+        # Bloque convolucional 3
+        layers.Conv2D(filters=128, kernel_size=3, activation="relu", padding="same"),
+        layers.MaxPool2D(),
+
+        # Head de clasificación
+        layers.Flatten(),
+        layers.Dense(units=6, activation="relu"),
+        layers.Dense(units=1, activation="sigmoid"),
+    ])
+    return model
+
+
+def compile_and_train(model, ds_train, ds_valid, epochs=30, optimizer="adam"):
+    """
+    Compila un modelo para clasificación binaria y lo entrena.
+
+    Parameters
+    ----------
+    model : tf.keras.Model
+        Modelo sin compilar.
+    ds_train, ds_valid : tf.data.Dataset
+        Datasets de entrenamiento y validación.
+    epochs : int
+        Número de épocas.
+    optimizer : str or tf.keras.optimizers.Optimizer
+        Optimizador a usar.
+
+    Returns
+    -------
+    tf.keras.callbacks.History
+        Historial del entrenamiento.
     """
     model.compile(
-        optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
-        loss='binary_crossentropy',
-        metrics=['binary_accuracy'],
+        optimizer=optimizer,
+        loss="binary_crossentropy",
+        metrics=["binary_accuracy"],
     )
-    return model
+    history = model.fit(
+        ds_train,
+        validation_data=ds_valid,
+        epochs=epochs,
+        verbose=0,
+    )
+    return history
 
+def build_vgg16_base(input_shape=(128, 128, 3)):
+    """
+    Alternativa a cargar un modelo pre-entrenado desde disco:
+    construye la base VGG16 directamente desde Keras Applications,
+    pre-entrenada en ImageNet y sin el head de clasificación.
 
-# Punto de entrada  
-if __name__ == '__main__':
-    # Inspección rápida de la arquitectura personalizada
-    model = build_custom_convnet()
-    model.summary()
+    Parameters
+    ----------
+    input_shape : tuple
+        Forma de entrada (alto, ancho, canales).
+
+    Returns
+    -------
+    tf.keras.Model
+        Base convolucional VGG16 (congelable con .trainable = False).
+    """
+    base = tf.keras.applications.VGG16(
+        include_top=False,
+        weights="imagenet",
+        input_shape=input_shape,
+    )
+    base.trainable = False
+    return base
